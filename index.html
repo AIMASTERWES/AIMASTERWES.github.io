@@ -3,11 +3,450 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B.A.R.S.</title>
+    <title>Master Audio Keyword Dictionary</title>
+    <style>
+        :root {
+            /* Updated to a darker, "Danger/Gunship" Cyberpunk Palette */
+            --bg-color: #050505;
+            --card-bg: #111111;
+            --text-primary: #f0f0f0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #ff0055; /* Neon Pink/Red for Synthwave vibe */
+            --accent-secondary: #00e5ff; /* Cyan for clarity */
+            --accent-glow: rgba(255, 0, 85, 0.4);
+            --tag-bg: #1a1a1a;
+            --tag-hover: #ff0055;
+            --header-gradient: linear-gradient(135deg, #ff0055 0%, #7000ff 100%);
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding-bottom: 50px;
+        }
+
+        /* Header & Search */
+        header {
+            position: sticky;
+            top: 0;
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 5%;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.5rem;
+            background: var(--header-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 4px; /* More angular for tech feel */
+            border: 1px solid var(--border-color);
+            background: #000;
+            color: var(--accent-secondary);
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            font-family: 'Courier New', monospace; /* Tech vibe */
+        }
+
+        #searchInput:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .category-section {
+            background: var(--card-bg);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .category-section:hover {
+            border-color: var(--accent-secondary);
+        }
+
+        .category-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(90deg, #1a1a1a, transparent);
+            user-select: none;
+        }
+
+        .category-header h2 {
+            font-size: 1.4rem;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .category-header .toggle-icon {
+            font-size: 1rem;
+            color: var(--accent-color);
+            transition: transform 0.3s ease;
+        }
+
+        .category-header.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .category-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out;
+            background-color: #0a0a0a;
+        }
+
+        .category-content.expanded {
+            max-height: 8000px;
+            transition: max-height 0.8s ease-in;
+        }
+
+        .subcategory {
+            padding: 20px;
+            border-top: 1px solid #222;
+        }
+
+        .subcategory h3 {
+            font-size: 1rem;
+            color: var(--accent-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background-color: var(--tag-bg);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 2px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .tag:hover {
+            background-color: var(--tag-hover);
+            color: white;
+            border-color: white;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--accent-secondary);
+            color: #000;
+            padding: 12px 30px;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            font-weight: 800;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .category-header h2 { font-size: 1.1rem; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to B.A.R.S.</h1>
-    <p>B.A.R.S. is a project that uses Stable Diffusion to generate images.</p>
-    <p>You can find the Colab notebook <a href="https://colab.research.google.com/github/AIMASTERWES/AIMASTERWES.github.io/blob/main/Copy_of_StableDiffusionUI_Voldemort.ipynb">here</a>.</p>
+
+<header>
+    <div class="header-content">
+        <h1>Sonic Palette</h1>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="SEARCH (e.g., 'Wobble', 'Jedi Mind', 'Cyberpunk')...">
+        </div>
+    </div>
+</header>
+
+<main id="container">
+    </main>
+
+<div id="toast">COPIED</div>
+
+<script>
+    const masterData = [
+        {
+            category: "6. Genres: The User Favorites (Curated)",
+            subcategories: [
+                {
+                    name: "Deep Dubstep & Wobble (Ganja White Night / Truth Style)",
+                    tags: ["140", "Belgian Bass", "Dark Garage", "Deep Dubstep", "Dungeon Sound", "Halftime", "Leftfield Bass", "Riddim", "Sub-bass", "Tearout", "Wobble", "Wonky"]
+                },
+                {
+                    name: "90s & Underground Hip Hop (Jedi Mind Tricks Style)",
+                    tags: ["Boom Bap", "Conscious Rap", "East Coast Hip Hop", "Golden Age", "Hardcore Hip Hop", "Horrorcore", "Industrial Hip Hop", "Jazz Rap", "Political Hip Hop", "Scratching", "Turntablism", "Underground Hip Hop"]
+                },
+                {
+                    name: "Cinematic Synth & Darksynth (Gunship / Danger Style)",
+                    tags: ["Cinematic Synthwave", "Cyberpunk", "Dark Electro", "Darksynth", "Midtempo Bass", "Outrun", "Retrowave", "Synthwave", "Vocal Synthwave"]
+                },
+                {
+                    name: "Rhythm Game, J-Core & Kawaii (Goofy/Osui/Feminine)",
+                    tags: ["Artcore", "Bubblegum Bass", "Denpa", "Future Core", "Happy Hardcore", "Hyperpop", "J-Core", "Kawaii Future Bass", "Kawaii Metal", "Maidcore", "Nightcore", "Speedcore", "Vocaloid"]
+                }
+            ]
+        },
+        {
+            category: "1. Sonic Qualities",
+            subcategories: [
+                {
+                    name: "Feminine & Ethereal",
+                    tags: ["Angelic", "Breath", "Coquette", "Delicate", "Ethereal", "Feminine", "Gentle", "Graceful", "Intimate", "Light", "Lush", "Pastel", "Silky", "Soft", "Soprano", "Sweet", "Velvety", "Whisper"]
+                },
+                {
+                    name: "Timbre & Texture",
+                    tags: ["Airy", "Ambient", "Bright", "Brittle", "Buzzy", "Clean", "Clear", "Crisp", "Dark", "Deep", "Dense", "Detailed", "Distorted", "Dry", "Dull", "Echoing", "Fat", "Full", "Fuzzy", "Grainy", "Gritty", "Harsh", "Heavy", "Hollow", "Lo-fi", "Mellow", "Metallic", "Muddy", "Muffled", "Noisy", "Piercing", "Polished", "Raw", "Resonant", "Rich", "Rough", "Saturated", "Sharp", "Shimmering", "Smooth", "Spacious", "Sparkling", "Thick", "Thin", "Transparent", "Warm", "Washed-out", "Wet"]
+                },
+                {
+                    name: "Distortion & Noise (Danger/Truth Vibes)",
+                    tags: ["Bitcrushed", "Blown-out", "Clipped", "Corrupted", "Crackle", "Crunchy", "Decayed", "Degraded", "Distorted", "Feedback", "Fuzz", "Glitch", "Grime", "Grit", "Harsh", "Industrial", "Overdriven", "Saturated", "Static"]
+                }
+            ]
+        },
+        {
+            category: "2. Compositional Techniques",
+            subcategories: [
+                {
+                    name: "Melodic & Harmonic",
+                    tags: ["Arpeggiated", "Atonal", "Chromatic", "Consonant", "Countermelody", "Diatonic", "Dissonant", "Drone", "Harmonic", "Inversions", "Layered", "Leitmotif", "Lyrical", "Melodic", "Modal", "Monophonic", "Pentatonic", "Polyphonic", "Resolution", "Sample-heavy", "Sequence", "Tonal"]
+                },
+                {
+                    name: "Rhythmic",
+                    tags: ["Breakbeat", "Chopped and Screwed", "Complex", "Double-time", "Drop", "Groove", "Half-time", "Off-beat", "Polyrhythms", "Rubato", "Shuffle", "Swing", "Syncopation", "Triplet Flow"]
+                }
+            ]
+        },
+        {
+            category: "3. Instrumentation",
+            subcategories: [
+                {
+                    name: "Electronic (Gunship/Danger)",
+                    tags: ["808", "Analog Synth", "Arpeggiator", "Bass Guitar (Distorted)", "Drum Machine", "FM Synthesis", "Granular Synthesis", "Juno-106", "Modular Synth", "Moog", "Reese Bass", "Sampler", "Sawtooth Wave", "Sine Wave", "Square Wave", "Synthesizer", "Talkbox", "Vocoder", "Wavetable"]
+                },
+                {
+                    name: "Orchestral & Acoustic",
+                    tags: ["Cello", "Choir", "Drums (acoustic)", "Electric Guitar", "Piano", "Strings (general)", "Violin", "Vocals (Female)", "Vocals (Male)"]
+                }
+            ]
+        },
+        {
+            category: "4. Emotional & Aesthetic",
+            subcategories: [
+                {
+                    name: "Dark & Intense (Truth/Danger)",
+                    tags: ["Aggressive", "Apocalyptic", "Brooding", "Creepy", "Dark", "Dystopian", "Eerie", "Foreboding", "Gritty", "Haunting", "Heavy", "Industrial", "Intense", "Macabre", "Menacing", "Mysterious", "Ominous", "Oppressive", "Raw", "Sinister", "Suspenseful", "Tense", "Threatening", "Violent"]
+                },
+                {
+                    name: "Goofy & Fun",
+                    tags: ["Bouncy", "Brainrot", "Chaotic", "Cheesy", "Cute", "Energetic", "Exaggerated", "Fun", "Hyper", "Ironic", "Kitsch", "Meme", "Playful", "Quirky", "Random", "Silly", "Spastic", "Upbeat", "Wacky", "Zany"]
+                },
+                {
+                    name: "Nostalgic & Dreamy (Gunship)",
+                    tags: ["Cinematic", "Dreamy", "Emotional", "Epic", "Euphoric", "Futuristic", "Hypnagogic", "Lonely", "Melancholic", "Neon", "Night-drive", "Nostalgic", "Retro", "Romantic", "Sentimental", "Soaring", "Vibrant", "Vintage", "Wistful"]
+                }
+            ]
+        },
+        {
+            category: "5. Historical Periods",
+            subcategories: [
+                {
+                    name: "Eras",
+                    tags: ["1980s", "1990s", "2000s", "2010s", "Ancient", "Baroque", "Classical", "Contemporary", "Digital Age", "Early 2000s", "Future", "Medieval", "Modern", "Renaissance", "Y2K"]
+                }
+            ]
+        },
+        {
+            category: "6. Broad Genres (General)",
+            subcategories: [
+                {
+                    name: "Electronic (General)",
+                    tags: ["Ambient", "Breakbeat", "Disco", "Drum and Bass", "Dub", "Electro", "Electronica", "Hard Dance", "House", "IDM", "Industrial", "Techno", "Trance", "Trip Hop", "UK Garage"]
+                },
+                {
+                    name: "Rock & Metal",
+                    tags: ["Alternative Rock", "Black Metal", "Death Metal", "Doom Metal", "Emo", "Gothic Rock", "Grunge", "Heavy Metal", "Indie Rock", "Industrial Metal", "Math Rock", "Metalcore", "Nu Metal", "Post-Punk", "Post-Rock", "Prog Rock", "Punk", "Shoegaze", "Stoner Rock", "Thrash Metal"]
+                },
+                {
+                    name: "Pop & Easy Listening",
+                    tags: ["Bedroom Pop", "City Pop", "Dream Pop", "Indie Pop", "K-Pop", "Lo-fi Hip Hop", "Neo-Soul", "R&B", "Synth-Pop"]
+                }
+            ]
+        }
+    ];
+
+    const container = document.getElementById('container');
+    const searchInput = document.getElementById('searchInput');
+    const toast = document.getElementById('toast');
+
+    function render(filterText = '') {
+        container.innerHTML = '';
+        const searchLower = filterText.toLowerCase();
+
+        masterData.forEach((section, index) => {
+            const sectionEl = document.createElement('section');
+            sectionEl.className = 'category-section';
+
+            let hasVisibleTags = false;
+
+            const filteredSubcats = section.subcategories.map(sub => {
+                const filteredTags = sub.tags.filter(tag => tag.toLowerCase().includes(searchLower));
+                if (filteredTags.length > 0) hasVisibleTags = true;
+                return { name: sub.name, tags: filteredTags };
+            }).filter(sub => sub.tags.length > 0);
+
+            if (!hasVisibleTags && filterText !== '') return;
+
+            const headerEl = document.createElement('div');
+            headerEl.className = 'category-header';
+            headerEl.innerHTML = `<h2>${section.category}</h2><span class="toggle-icon">▼</span>`;
+
+            // Auto expand "User Favorites" (index 0) or on search
+            if (filterText !== '' || index === 0) {
+                headerEl.classList.add('active');
+            }
+
+            const contentEl = document.createElement('div');
+            contentEl.className = 'category-content';
+            if (headerEl.classList.contains('active')) contentEl.classList.add('expanded');
+
+            filteredSubcats.forEach(sub => {
+                const subDiv = document.createElement('div');
+                subDiv.className = 'subcategory';
+
+                const subTitle = document.createElement('h3');
+                subTitle.textContent = sub.name;
+                subDiv.appendChild(subTitle);
+
+                const tagContainer = document.createElement('div');
+                tagContainer.className = 'tag-container';
+
+                sub.tags.forEach(tag => {
+                    const tagEl = document.createElement('span');
+                    tagEl.className = 'tag';
+                    tagEl.textContent = tag;
+
+                    tagEl.onclick = (e) => {
+                        e.stopPropagation();
+                        copyToClipboard(tag);
+                    };
+
+                    tagContainer.appendChild(tagEl);
+                });
+
+                subDiv.appendChild(tagContainer);
+                contentEl.appendChild(subDiv);
+            });
+
+            headerEl.onclick = () => {
+                const isExpanded = contentEl.classList.contains('expanded');
+                if (isExpanded) {
+                    contentEl.classList.remove('expanded');
+                    headerEl.classList.remove('active');
+                } else {
+                    contentEl.classList.add('expanded');
+                    headerEl.classList.add('active');
+                }
+            };
+
+            sectionEl.appendChild(headerEl);
+            sectionEl.appendChild(contentEl);
+            container.appendChild(sectionEl);
+        });
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`Copied: ${text}`);
+        });
+    }
+
+    function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2000);
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        render(e.target.value);
+    });
+
+    render();
+
+</script>
+
 </body>
 </html>
