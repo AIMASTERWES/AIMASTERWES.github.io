@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessible Controls Playground</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>Accessible Controls Playground</h1>
+    <p>Keyboard-friendly demo for knobs, tabs, toggles, copy buttons, and ignition.</p>
+  </header>
+
+  <main>
+    <section aria-labelledby="tabs-heading" class="card">
+      <div class="section-header">
+        <h2 id="tabs-heading">Control Tabs</h2>
+        <p>Use left/right arrow keys or Enter/Space to switch tabs.</p>
+      </div>
+      <div role="tablist" aria-label="control tabs" class="tabs" id="control-tabs">
+        <button role="tab" aria-selected="true" aria-controls="tab-content-1" id="tab-1" tabindex="0" class="tab">Knobs</button>
+        <button role="tab" aria-selected="false" aria-controls="tab-content-2" id="tab-2" tabindex="-1" class="tab">Modes</button>
+      </div>
+      <div class="tab-panels">
+        <div role="tabpanel" id="tab-content-1" aria-labelledby="tab-1" class="tab-panel" tabindex="0">
+          <p class="muted">Focus a knob and press Enter or Space to randomize its value.</p>
+          <div class="knob-grid">
+            <div class="knob" data-knob="temperature" tabindex="0" aria-label="Temperature knob">
+              <div class="knob-label">Temperature</div>
+              <div class="knob-value" aria-live="polite">0.50</div>
+              <button type="button" class="knob-random">Randomize</button>
+            </div>
+            <div class="knob" data-knob="guidance" tabindex="0" aria-label="Guidance knob">
+              <div class="knob-label">Guidance</div>
+              <div class="knob-value" aria-live="polite">7.50</div>
+              <button type="button" class="knob-random">Randomize</button>
+            </div>
+          </div>
+        </div>
+        <div role="tabpanel" id="tab-content-2" aria-labelledby="tab-2" class="tab-panel" aria-hidden="true" tabindex="0" hidden>
+          <p class="muted">Toggle modes with Enter or Space. Focus styles stay visible while tabbing.</p>
+          <div class="toggle-row">
+            <button type="button" class="mode-toggle" aria-pressed="true" aria-label="Auto ignite">Auto ignite</button>
+            <button type="button" class="mode-toggle" aria-pressed="false" aria-label="Manual ignite">Manual ignite</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="copy-heading" class="card">
+      <div class="section-header">
+        <h2 id="copy-heading">Copy &amp; Ignite</h2>
+        <p>All controls are keyboard operable.</p>
+      </div>
+      <div class="copy-row">
+        <label class="muted" for="prompt">Prompt text</label>
+        <textarea id="prompt" rows="3" aria-label="Prompt">A vibrant nebula with cascading stardust.</textarea>
+        <div class="copy-actions">
+          <button type="button" class="copy" data-target="#prompt">Copy prompt</button>
+          <button type="button" class="copy" data-target="#status">Copy status</button>
+        </div>
+      </div>
+      <div class="ignite-row">
+        <div id="status" class="status" aria-live="polite">Awaiting ignition.</div>
+        <button type="button" id="ignite" class="primary">Ignite</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
