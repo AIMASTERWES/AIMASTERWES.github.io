@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>TR-9000 | Tri-Synth & Drum Lab</title>
+  <meta name="theme-color" content="#0b0a14"/>
+
+  <style>
+    /* --- VIBRANT CYBER-TROPICAL THEME --- */
+    :root {
+      --bg-dark: #050408;
+      --bg-panel: rgba(20, 18, 33, 0.95);
+      --bg-el: rgba(255, 255, 255, 0.06);
+
+      --text-main: #e0e0ff;
+      --text-dim: #7a7695;
+
+      /* REPLACED (no pink/cyan/violet) */
+      --cyan:  #1f4b6e;  /* steel blue */
+      --pink:  #7a1111;  /* oxblood */
+      --violet:#8a5a17;  /* burnt bronze */
+
+      --red:   #ff3333;
+      --lime:  #ccff00;
+
+      /* updated glows to match */
+      --glow-cyan: 0 0 10px rgba(31, 75, 110, 0.55);
+      --glow-pink: 0 0 10px rgba(122, 17, 17, 0.55);
+
+      --font-ui: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+    body {
+      margin: 0; height: 100vh; overflow: hidden;
+      background-color: var(--bg-dark);
+      background-image:
+        radial-gradient(circle at 15% 50%, rgba(138, 90, 23, 0.15), transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(31, 75, 110, 0.1), transparent 40%);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      display: flex; flex-direction: column;
+    }
+
+    #root { height: 100%; width: 100%; display: flex; flex-direction: column; }
+
+    /* UTILS */
+    .flex-row { display: flex; align-items: center; gap: 8px; }
+    .flex-col { display: flex; flex-direction: column; gap: 8px; }
+    .grow { flex: 1; min-height: 0; min-width: 0; }
+    .scroll-y { overflow-y: auto; overflow-x: hidden; }
+    .p-2 { padding: 12px; }
+    .center { display: flex; align-items: center; justify-content: center; }
+
+    /* COMPONENTS */
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .header { justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 16px; }
+    .logo {
+      font-weight: 900; font-size: 1.2rem; letter-spacing: 2px;
+      background: linear-gradient(to right, var(--cyan), var(--violet));
+      -webkit-background-clip: text; color: transparent;
+      text-transform: uppercase;
+    }
+
+    /* OVERLAY */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    .start-btn {
+      padding: 20px 40px; font-size: 1.5rem; font-weight: 900;
+      color: var(--bg-dark); background: var(--cyan);
+      border: none; border-radius: 50px; cursor: pointer;
+      box-shadow: 0 0 30px var(--cyan);
+      animation: pulse 1.5s infinite ease-in-out;
+      touch-action: manipulation;
+    }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+    /* CONTROLS */
+    .btn {
+      background: var(--bg-el); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-main); padding: 6px 12px; border-radius: 6px;
+      font-size: 0.75rem; font-weight: 700; cursor: pointer; text-transform: uppercase;
+      transition: all 0.1s;
+      touch-action: manipulation;
+    }
+    .btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: rgba(31, 75, 110, 0.15); border-color: var(--cyan); color: var(--cyan); }
+    .btn.active { background: var(--text-main); color: var(--bg-dark); border-color: var(--text-main); }
+    .btn.danger { border-color: var(--red); color: var(--red); }
+
+    select {
+      background: rgba(0,0,0,0.25);
+      color: var(--text-main);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      outline: none;
+    }
+
+    /* SEQUENCER */
+    .track-row { display: flex; height: 36px; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .track-label {
+      width: 60px; font-size: 0.65rem; font-weight: 800; color: var(--text-dim);
+      text-transform: uppercase; text-align: right; padding-right: 8px; border-right: 2px solid;
+      white-space: nowrap;
+    }
+    .sequencer-grid { display: grid; gap: 4px; flex: 1; overflow: visible; }
+
+    .step-btn {
+      height: 100%; min-width: 20px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 4px; cursor: pointer; position: relative;
+      touch-action: manipulation;
+    }
+    .step-btn:nth-child(4n) { margin-right: 4px; } /* Beat separator */
+
+    .step-btn.playing { background: rgba(255,255,255,0.2) !important; border-color: #fff !important; transform: scale(1.08); z-index: 10; }
+
+    /* Drum Colors */
+    .step-btn.d-1 { background: rgba(31, 75, 110, 0.20); border-color: rgba(31, 75, 110, 0.45); }
+    .step-btn.d-2 { background: rgba(31, 75, 110, 0.60); box-shadow: var(--glow-cyan); border-color: #fff; }
+
+    /* Synth Colors (per-element via CSS vars) */
+    .step-btn.s-on {
+      background: var(--track, var(--pink));
+      box-shadow: var(--trackGlow, var(--glow-pink));
+      border-color: #fff;
+    }
+
+    .step-note { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; color: #000; font-weight: 900; }
+
+    /* SYNTH PANEL */
+    .synth-panel {
+      display: grid; grid-template-columns: 240px 1fr; gap: 16px;
+      border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;
+    }
+    .knob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; margin: 10px 0; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--text-main); cursor: pointer; border: 2px solid #000; }
+
+    .lbl { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; display: flex; justify-content: space-between; }
+
+    /* KEYBOARD */
+    .keyboard { display: flex; height: 60px; gap: 2px; }
+    .key { flex: 1; background: rgba(255,255,255,0.9); border-radius: 0 0 4px 4px; cursor: pointer; position: relative; border: none; }
+    .key.black { background: #111; width: 60%; margin: 0 -30%; z-index: 2; height: 65%; border: 1px solid #333; }
+    .key:active, .key.pressed { background: var(--lime); transform: translateY(2px); }
+    .key.black:active, .key.black.pressed { background: var(--lime); }
+
+    @media(max-width: 700px) {
+      .synth-panel { grid-template-columns: 1fr; }
+      .knob-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // --- AUDIO ENGINE ---
+    class Engine {
+      constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+        this.master = this.ctx.createGain();
+        this.master.gain.value = 0.85;
+
+        // Compressor/limiter-ish bus (gentle glue + clip guard)
+        this.comp = this.ctx.createDynamicsCompressor();
+        this.comp.threshold.value = -18;
+        this.comp.knee.value = 12;
+        this.comp.ratio.value = 6;
+        this.comp.attack.value = 0.003;
+        this.comp.release.value = 0.12;
+
+        this.master.connect(this.comp).connect(this.ctx.destination);
+        this.noise = this.makeNoise();
+      }
+
+      makeNoise() {
+        const b = this.ctx.createBuffer(1, this.ctx.sampleRate * 2, this.ctx.sampleRate);
+        const d = b.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        return b;
+      }
+
+      resume() {
+        if (this.ctx.state === 'suspended') return this.ctx.resume();
+        return Promise.resolve();
+      }
+
+      _t(time) {
+        const eps = 0.001;
+        return Math.max(time, this.ctx.currentTime + eps);
+      }
+
+      _disconnectOnEnd(node, endTime) {
+        const t = this._t(endTime);
+        // Best-effort cleanup
+        try {
+          const dummy = this.ctx.createGain();
+          dummy.gain.setValueAtTime(0, t);
+          dummy.connect(this.ctx.destination);
+          dummy.disconnect();
+        } catch (_) {}
+        setTimeout(() => {
+          try { node.disconnect(); } catch (_) {}
+        }, Math.max(0, (t - this.ctx.currentTime) * 1000 + 50));
+      }
+
+      triggerDrum(time, type, vel = 2) {
+        const t0 = this._t(time);
+        const velGain = vel === 1 ? 0.55 : 1.0;
+
+        const out = this.ctx.createGain();
+        out.gain.value = velGain;
+        out.connect(this.master);
+
+        if (type === 'kick') {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(160, t0);
+          osc.frequency.exponentialRampToValueAtTime(42, t0 + 0.14);
+
+          g.gain.setValueAtTime(1.0, t0);
+          g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+
+          osc.connect(g).connect(out);
+          osc.start(t0); osc.stop(t0 + 0.30);
+
+          this._disconnectOnEnd(out, t0 + 0.35);
+        }
+
+        else if (type === 'snare') {
+          // tonal snap
+          const osc = this.ctx.createOscillator();
+          const og = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, t0);
+          og.gain.setValueAtTime(0.35, t0);
+          og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+          osc.connect(og).connect(out);
+          osc.start(t0); osc.stop(t0 + 0.12);
+
+          // noise body
+          const n = this.ctx.createBufferSource();
+          n.buffer = this.noise;
+          const hp = this.ctx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.setValueAtTime(1200, t0);
+          const ng = this.ctx.createGain();
+          ng.gain.setValueAtTime(0.55, t0);
+          ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+          n.connect(hp).connect(ng).connect(out);
+          n.start(t0); n.stop(t0 + 0.20);
+
+          this._disconnectOnEnd(out, t0 + 0.30);
+        }
+
+        else if (type === 'hat') {
+          const n = this.ctx.createBufferSource();
+          n.buffer = this.noise;
+
+          const hp = this.ctx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.setValueAtTime(6500, t0);
+
+          const ng = this.ctx.createGain();
+          ng.gain.setValueAtTime(0.25, t0);
+          ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.045);
+
+          n.connect(hp).connect(ng).connect(out);
+          n.start(t0); n.stop(t0 + 0.06);
+
+          this._disconnectOnEnd(out, t0 + 0.12);
+        }
+
+        else if (type === 'clap') {
+          // multi-burst filtered noise = clap-ish
+          const bursts = [0.0, 0.012, 0.024];
+          bursts.forEach((dt, idx) => {
+            const n = this.ctx.createBufferSource();
+            n.buffer = this.noise;
+
+            const bp = this.ctx.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(1800 + idx * 200, t0 + dt);
+            bp.Q.setValueAtTime(0.9, t0 + dt);
+
+            const g = this.ctx.createGain();
+            g.gain.setValueAtTime(0.55, t0 + dt);
+            g.gain.exponentialRampToValueAtTime(0.001, t0 + dt + 0.06);
+
+            n.connect(bp).connect(g).connect(out);
+            n.start(t0 + dt);
+            n.stop(t0 + dt + 0.08);
+          });
+
+          this._disconnectOnEnd(out, t0 + 0.20);
+        }
+      }
+
+      triggerSynth(time, note, params, type) {
+        const t0 = this._t(time);
+        const freq = 440 * Math.pow(2, (note - 69) / 12);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(params.cutoff, t0);
+        filter.Q.setValueAtTime(params.res, t0);
+
+        const amp = this.ctx.createGain();
+        amp.gain.setValueAtTime(0.0001, t0);
+
+        const attack = Math.max(0.002, params.attack ?? 0.01);
+        const decay = Math.max(0.05, params.decay ?? 0.2);
+        const peak = params.gain ?? 0.5;
+
+        amp.gain.linearRampToValueAtTime(peak, t0 + attack);
+        amp.gain.exponentialRampToValueAtTime(0.001, t0 + attack + decay);
+
+        filter.connect(amp).connect(this.master);
+
+        const osc1 = this.ctx.createOscillator();
+        osc1.type = params.wave;
+        osc1.frequency.setValueAtTime(freq, t0);
+        osc1.connect(filter);
+
+        let osc2 = null;
+        if (type === 'lead') {
+          osc2 = this.ctx.createOscillator();
+          osc2.type = params.wave;
+          osc2.frequency.setValueAtTime(freq, t0);
+          osc2.detune.setValueAtTime(params.detune ?? 10, t0);
+          osc2.connect(filter);
+        }
+
+        // Bass: subtle sub oscillator for weight
+        let sub = null;
+        if (type === 'bass') {
+          sub = this.ctx.createOscillator();
+          sub.type = 'sine';
+          sub.frequency.setValueAtTime(freq / 2, t0);
+          const subG = this.ctx.createGain();
+          subG.gain.setValueAtTime(0.25, t0);
+          sub.connect(subG).connect(filter);
+          sub.start(t0);
+          sub.stop(t0 + attack + decay + 0.25);
+        }
+
+        const stopAt = t0 + attack + decay + 0.25;
+
+        osc1.start(t0); osc1.stop(stopAt);
+        if (osc2) { osc2.start(t0); osc2.stop(stopAt); }
+
+        this._disconnectOnEnd(amp, stopAt + 0.05);
+      }
+    }
+
+    function App() {
+      const [started, setStarted] = useState(false);
+      const [playing, setPlaying] = useState(false);
+      const [currentStep, setCurrentStep] = useState(-1);
+
+      const [bpm, setBpm] = useState(128);
+      const [steps, setSteps] = useState(16);
+
+      const [activeTab, setActiveTab] = useState('lead'); // drums|lead|bass|fx
+      const [rootNote, setRootNote] = useState(60); // C4
+
+      // --- STATE REFS (Scheduler-safe) ---
+      const dataRef = useRef({
+        drums: {
+          kick: Array(32).fill(0),
+          snare: Array(32).fill(0),
+          hat: Array(32).fill(0),
+          clap: Array(32).fill(0)
+        },
+        lead: Array(32).fill(null),
+        bass: Array(32).fill(null),
+        fx: Array(32).fill(null),
+        params: {
+          lead: { wave: 'sawtooth', cutoff: 2000, res: 2, decay: 0.20, attack: 0.01, detune: 10, gain: 0.5 },
+          bass: { wave: 'square',   cutoff: 700,  res: 6, decay: 0.30, attack: 0.01, gain: 0.5 },
+          fx:   { wave: 'sine',     cutoff: 900,  res: 1, decay: 0.50, attack: 0.01, gain: 0.45 }
+        },
+        swing: 0.10,
+        drumRand: { density: 0.35, complexity: 0.35 },
+        noteRand: { density: 0.22 }
+      });
+
+      // Force re-render helper (UI only)
+      const [, setTick] = useState(0);
+      const forceUpdate = () => setTick(t => t + 1);
+
+      const engine = useRef(null);
+
+      // Transport refs for live updates
+      const transportRef = useRef({ bpm: 128, steps: 16 });
+      useEffect(() => { transportRef.current.bpm = bpm; }, [bpm]);
+      useEffect(() => { transportRef.current.steps = steps; }, [steps]);
+
+      const playingRef = useRef(false);
+      useEffect(() => { playingRef.current = playing; }, [playing]);
+
+      const schedulerTimer = useRef(null);
+      const nextNoteTime = useRef(0);
+      const seqStep = useRef(0);
+
+      // Visualization queue (time-aligned without setTimeout pileup)
+      const vizQueue = useRef([]);
+      const vizRaf = useRef(null);
+
+      const initAudio = async () => {
+        if (!engine.current) engine.current = new Engine();
+        await engine.current.resume();
+        setStarted(true);
+      };
+
+      const ensureAudioRunning = async () => {
+        if (!engine.current) engine.current = new Engine();
+        await engine.current.resume();
+      };
+
+      const schedule = useCallback(() => {
+        if (!engine.current) return;
+        const ctx = engine.current.ctx;
+
+        const LOOKAHEAD_S = 0.12;
+        while (nextNoteTime.current < ctx.currentTime + LOOKAHEAD_S) {
+          const s = seqStep.current;
+          const t = nextNoteTime.current;
+
+          const d = dataRef.current;
+          const { bpm: bpmNow, steps: stepsNow } = transportRef.current;
+
+          // Swing on odd 16ths
+          const isOdd = (s % 2) === 1;
+          const swingOffset = isOdd ? (d.swing * (60 / bpmNow) / 4) : 0;
+          const playTime = Math.max(t + swingOffset, ctx.currentTime + 0.001);
+
+          // Drums
+          const dk = d.drums.kick[s];  if (dk) engine.current.triggerDrum(playTime, 'kick', dk);
+          const ds = d.drums.snare[s]; if (ds) engine.current.triggerDrum(playTime, 'snare', ds);
+          const dh = d.drums.hat[s];   if (dh) engine.current.triggerDrum(playTime, 'hat', dh);
+          const dc = d.drums.clap[s];  if (dc) engine.current.triggerDrum(playTime, 'clap', dc);
+
+          // Synths
+          if (d.lead[s]) engine.current.triggerSynth(playTime, d.lead[s].note, d.params.lead, 'lead');
+          if (d.bass[s]) engine.current.triggerSynth(playTime, d.bass[s].note, d.params.bass, 'bass');
+          if (d.fx[s])   engine.current.triggerSynth(playTime, d.fx[s].note,   d.params.fx,   'fx');
+
+          // Viz
+          vizQueue.current.push({ step: s, time: playTime });
+
+          // Advance
+          nextNoteTime.current += (60 / bpmNow) / 4; // 16th notes
+          seqStep.current = (s + 1) % stepsNow;
+        }
+      }, []);
+
+      const vizLoop = useCallback(() => {
+        if (!engine.current || !playingRef.current) return;
+        const ctx = engine.current.ctx;
+
+        // Consume any steps whose time has passed
+        while (vizQueue.current.length && vizQueue.current[0].time <= ctx.currentTime) {
+          const item = vizQueue.current.shift();
+          setCurrentStep(item.step);
+        }
+        vizRaf.current = requestAnimationFrame(vizLoop);
+      }, []);
+
+      const startPlayback = async () => {
+        await ensureAudioRunning();
+        setPlaying(true);
+
+        // Reset sequencing
+        seqStep.current = 0;
+        vizQueue.current = [];
+        setCurrentStep(-1);
+
+        nextNoteTime.current = engine.current.ctx.currentTime + 0.05;
+
+        // Scheduler tick
+        const INTERVAL_MS = 25;
+        schedulerTimer.current = setInterval(schedule, INTERVAL_MS);
+
+        // Viz
+        vizRaf.current = requestAnimationFrame(vizLoop);
+      };
+
+      const stopPlayback = () => {
+        setPlaying(false);
+        setCurrentStep(-1);
+
+        if (schedulerTimer.current) {
+          clearInterval(schedulerTimer.current);
+          schedulerTimer.current = null;
+        }
+        if (vizRaf.current) {
+          cancelAnimationFrame(vizRaf.current);
+          vizRaf.current = null;
+        }
+        vizQueue.current = [];
+      };
+
+      const togglePlay = async () => {
+        if (playingRef.current) stopPlayback();
+        else await startPlayback();
+      };
+
+      useEffect(() => {
+        return () => stopPlayback();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+
+      // --- EDITING ---
+      const toggleDrum = async (track, i) => {
+        await ensureAudioRunning();
+        const d = dataRef.current.drums;
+        d[track][i] = (d[track][i] + 1) % 3; // 0->1->2
+        forceUpdate();
+      };
+
+      const toggleSynth = async (track, i) => {
+        await ensureAudioRunning();
+        const p = dataRef.current[track];
+        if (p[i] && p[i].note === rootNote) p[i] = null;
+        else p[i] = { note: rootNote };
+        forceUpdate();
+      };
+
+      const updateParam = (key, val) => {
+        dataRef.current.params[activeTab][key] = (key === 'wave') ? val : parseFloat(val);
+        forceUpdate();
+      };
+
+      const updateDrumRand = (key, val) => {
+        dataRef.current.drumRand[key] = parseFloat(val);
+        forceUpdate();
+      };
+
+      const updateNoteRand = (key, val) => {
+        dataRef.current.noteRand[key] = parseFloat(val);
+        forceUpdate();
+      };
+
+      const clearAll = () => {
+        const d = dataRef.current;
+        d.drums = { kick:Array(32).fill(0), snare:Array(32).fill(0), hat:Array(32).fill(0), clap:Array(32).fill(0) };
+        d.lead = Array(32).fill(null);
+        d.bass = Array(32).fill(null);
+        d.fx = Array(32).fill(null);
+        forceUpdate();
+      };
+
+      const getNoteName = (m) => ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"][m%12] + (Math.floor(m/12)-1);
+
+      const trackColor = (t) => (t==='lead' ? 'var(--cyan)' : (t==='bass' ? 'var(--pink)' : 'var(--lime)'));
+      const trackGlow  = (t) => (t === 'lead' ? 'var(--glow-cyan)' : t === 'bass' ? 'var(--glow-pink)' : '0 0 10px rgba(204,255,0,0.45)');
+
+      const randomize = () => {
+        const d = dataRef.current;
+        const len = 32;
+        const sN = transportRef.current.steps;
+
+        if (activeTab === 'drums') {
+          const { density, complexity } = d.drumRand;
+
+          const kick = Array(len).fill(0);
+          const snare = Array(len).fill(0);
+          const hat = Array(len).fill(0);
+          const clap = Array(len).fill(0);
+
+          // Kick anchor(s)
+          kick[0] = 2;
+          if (sN === 16) {
+            if (Math.random() < 0.65) kick[8] = 2;
+          } else {
+            if (Math.random() < 0.65) kick[16] = 2;
+          }
+
+          for (let i = 0; i < sN; i++) {
+            // extra kicks
+            const beat = (i % 4 === 0);
+            const pK = (beat ? 0.10 : 0.05) + density * 0.18 + complexity * 0.10;
+            if (Math.random() < pK) kick[i] = (Math.random() < 0.55 ? 1 : 2);
+
+            // snares (backbeat + fills)
+            const isBackbeat = (i % 16 === 4) || (i % 16 === 12);
+            if (isBackbeat) snare[i] = 2;
+            else if (Math.random() < (density * 0.05 + complexity * 0.08) && i % 4 !== 0) snare[i] = 1;
+
+            // hats (8ths baseline + spice)
+            const on8th = (i % 2 === 0);
+            const pH = (on8th ? 0.65 : 0.15) + density * 0.22;
+            if (Math.random() < pH) hat[i] = (on8th && Math.random() < 0.55 ? 1 : 2);
+
+            // claps sometimes on backbeat
+            if (isBackbeat && Math.random() < (0.25 + complexity * 0.30)) clap[i] = 1;
+          }
+
+          d.drums.kick = kick;
+          d.drums.snare = snare;
+          d.drums.hat = hat;
+          d.drums.clap = clap;
+        } else {
+          const dens = d.noteRand.density;
+
+          // Minor pentatonic relative to current root note (rootNote)
+          const rootPc = rootNote % 12;
+          const pent = [0, 3, 5, 7, 10];
+          const scale = [];
+          for (let oct = 3; oct <= 5; oct++) {
+            const base = (oct * 12) + rootPc;
+            pent.forEach(semi => scale.push(base + semi));
+          }
+
+          d[activeTab] = Array(len).fill(null).map((_, i) => {
+            if (i >= sN) return null;
+            return (Math.random() < dens)
+              ? { note: scale[Math.floor(Math.random() * scale.length)] }
+              : null;
+          });
+        }
+
+        forceUpdate();
+      };
+
+      if (!started) {
+        return (
+          <div className="overlay">
+            <h1 className="logo" style={{fontSize:'3rem', marginBottom:20}}>TR-9000</h1>
+            <button className="start-btn" onClick={initAudio}>CLICK TO START</button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="panel grow flex-col p-2" style={{borderRadius:0, border:0}}
+             onPointerDown={() => { if (engine.current) engine.current.resume(); }}>
+          {/* HEADER */}
+          <div className="flex-row header">
+            <div className="logo">TR-9000</div>
+            <div className="flex-row">
+              <button className="btn danger" onClick={clearAll}>CLEAR</button>
+            </div>
+          </div>
+
+          {/* TRANSPORT */}
+          <div className="panel p-2 flex-row" style={{justifyContent:'space-between'}}>
+            <div className="flex-row">
+              <button className={`btn primary ${playing?'active':''}`} onClick={togglePlay} style={{padding:'8px 24px', fontSize:'1rem'}}>
+                {playing ? 'STOP' : 'PLAY'}
+              </button>
+
+              <div className="flex-col" style={{gap:0}}>
+                <span className="lbl">BPM {bpm}</span>
+                <input type="range" min="60" max="200" value={bpm}
+                       onChange={e=>setBpm(parseInt(e.target.value, 10))}
+                       style={{width:110}} />
+              </div>
+
+              <div className="flex-col" style={{gap:0}}>
+                <span className="lbl">SWING</span>
+                <input type="range" min="0" max="0.5" step="0.01" value={dataRef.current.swing}
+                       onChange={e=>{ dataRef.current.swing = parseFloat(e.target.value); forceUpdate(); }}
+                       style={{width:80}} />
+              </div>
+            </div>
+
+            <div className="flex-row">
+              <button className={`btn ${steps===16?'active':''}`} onClick={()=>setSteps(16)}>16</button>
+              <button className={`btn ${steps===32?'active':''}`} onClick={()=>setSteps(32)}>32</button>
+            </div>
+          </div>
+
+          {/* GRID */}
+          <div className="panel p-2 grow scroll-y">
+            {['kick','snare','hat','clap'].map(k => (
+              <div key={k} className="track-row">
+                <div className="track-label" style={{color:'var(--violet)', borderColor:'var(--violet)'}}>{k}</div>
+                <div className="sequencer-grid" style={{gridTemplateColumns:`repeat(${steps}, 1fr)`}}>
+                  {dataRef.current.drums[k].slice(0, steps).map((val, i) => (
+                    <div key={i}
+                      className={`step-btn d-${val} ${i===currentStep?'playing':''}`}
+                      onPointerDown={(e)=>{ e.preventDefault(); toggleDrum(k, i); }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div style={{height:10}} />
+
+            {['lead','bass','fx'].map(k => (
+              <div key={k} className="track-row">
+                <div className="track-label" style={{color:trackColor(k), borderColor:trackColor(k)}}>{k}</div>
+                <div className="sequencer-grid" style={{gridTemplateColumns:`repeat(${steps}, 1fr)`}}>
+                  {dataRef.current[k].slice(0, steps).map((val, i) => (
+                    <div key={i}
+                      className={`step-btn ${val?'s-on':''} ${i===currentStep?'playing':''}`}
+                      style={val ? { '--track': trackColor(k), '--trackGlow': trackGlow(k) } : null}
+                      onPointerDown={(e)=>{ e.preventDefault(); toggleSynth(k, i); }}
+                    >
+                      {val && <div className="step-note">{getNoteName(val.note)}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* CONTROLS */}
+          <div className="panel p-2">
+            <div className="flex-row" style={{marginBottom:12}}>
+              <button className={`btn ${activeTab==='drums'?'active':''}`} onClick={()=>setActiveTab('drums')}>DRUMS</button>
+              <button className={`btn ${activeTab==='lead'?'active':''}`} onClick={()=>setActiveTab('lead')}>LEAD</button>
+              <button className={`btn ${activeTab==='bass'?'active':''}`} onClick={()=>setActiveTab('bass')}>BASS</button>
+              <button className={`btn ${activeTab==='fx'?'active':''}`} onClick={()=>setActiveTab('fx')}>FX</button>
+
+              <div className="grow" />
+
+              <button className="btn" onClick={randomize}>
+                🎲 RAND {activeTab === 'drums' ? 'DRUMS' : 'MELODY'}
+              </button>
+            </div>
+
+            <div className="synth-panel">
+              <div className="knob-grid">
+                {activeTab === 'drums' ? (
+                  <>
+                    <div className="flex-col" style={{gap:0}}>
+                      <span className="lbl">DENSITY</span>
+                      <input type="range" min="0.05" max="0.85" step="0.01"
+                             value={dataRef.current.drumRand.density}
+                             onChange={e=>updateDrumRand('density', e.target.value)} />
+                    </div>
+                    <div className="flex-col" style={{gap:0}}>
+                      <span className="lbl">COMPLEX</span>
+                      <input type="range" min="0" max="1" step="0.01"
+                             value={dataRef.current.drumRand.complexity}
+                             onChange={e=>updateDrumRand('complexity', e.target.value)} />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-col" style={{gap:0}}>
+                      <span className="lbl">WAVE</span>
+                      <select value={dataRef.current.params[activeTab].wave}
+                              onChange={e=>updateParam('wave', e.target.value)}>
+                        <option value="sine">SINE</option>
+                        <option value="triangle">TRI</option>
+                        <option value="square">SQUARE</option>
+                        <option value="sawtooth">SAW</option>
+                      </select>
+                    </div>
+
+                    <div className="flex-col" style={{gap:0}}>
+                      <span className="lbl">CUTOFF</span>
+                      <input type="range" min="120" max="7000"
+                             value={dataRef.current.params[activeTab].cutoff}
+                             onChange={e=>updateParam('cutoff', e.target.value)} />
+                    </div>
+
+                    <div className="flex-col" style={{gap:0}}>
+                      <span className="lbl">RES</span>
+                      <input type="range" min="0" max="20"
+                             value={dataRef.current.params[activeTab].res}
+                             onChange={e=>updateParam('res', e.target.value)} />
+                    </div>
+
+                    <div className="flex-col" style={{gap:0}}>
+                      <span className="lbl">DECAY</span>
+                      <input type="range" min="0.05" max="1.2" step="0.01"
+                             value={dataRef.current.params[activeTab].decay}
+                             onChange={e=>updateParam('decay', e.target.value)} />
+                    </div>
+
+                    {activeTab === 'lead' && (
+                      <div className="flex-col" style={{gap:0}}>
+                        <span className="lbl">DETUNE</span>
+                        <input type="range" min="0" max="50"
+                               value={dataRef.current.params[activeTab].detune}
+                               onChange={e=>updateParam('detune', e.target.value)} />
+                      </div>
+                    )}
+
+                    <div className="flex-col" style={{gap:0}}>
+                      <span className="lbl">RAND DENS</span>
+                      <input type="range" min="0.05" max="0.70" step="0.01"
+                             value={dataRef.current.noteRand.density}
+                             onChange={e=>updateNoteRand('density', e.target.value)} />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="flex-col">
+                <div className="lbl">KEYBOARD (Select Note: {getNoteName(rootNote)})</div>
+                <div className="keyboard">
+                  {[48,49,50,51,52,53,54,55,56,57,58,59,60].map(m => {
+                    const isBlack = [1,3,6,8,10].includes(m%12);
+                    const pressed = rootNote === m;
+                    return (
+                      <button
+                        key={m}
+                        className={`key ${isBlack?'black':''} ${pressed?'pressed':''}`}
+                        onPointerDown={async (e) => {
+                          e.preventDefault();
+                          await ensureAudioRunning();
+                          setRootNote(m);
+                          const t = engine.current.ctx.currentTime + 0.001;
+                          if (activeTab === 'lead') engine.current.triggerSynth(t, m, dataRef.current.params.lead, 'lead');
+                          if (activeTab === 'bass') engine.current.triggerSynth(t, m, dataRef.current.params.bass, 'bass');
+                          if (activeTab === 'fx')   engine.current.triggerSynth(t, m, dataRef.current.params.fx,   'fx');
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
